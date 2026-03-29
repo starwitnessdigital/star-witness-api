@@ -41,5 +41,4 @@ COPY Public ./Public
 ENV PORT=8080
 EXPOSE 8080
 
-ENTRYPOINT ["./App"]
-CMD ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]
+CMD ["sh", "-c", "./App serve --env production --hostname 0.0.0.0 --port ${PORT:-8080}"]
