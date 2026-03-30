@@ -60,6 +60,15 @@ public func routes(_ app: Application) throws {
     chakraGroup.get(":name", "crystals", use: chakra.crystals)
     chakraGroup.get(":name", "practices", use: chakra.practices)
 
+    // MARK: Content Generation endpoints
+    let content = ContentController()
+    let contentGroup = v1.grouped("content")
+    contentGroup.get("horoscope", use: content.horoscope)
+    contentGroup.get("affirmations", use: content.affirmations)
+    contentGroup.get("journal-prompts", use: content.journalPrompts)
+    contentGroup.get("daily-card", use: content.dailyCard)
+    contentGroup.get("meditation", use: content.meditation)
+
     // MARK: - Health check (no auth required)
     app.get("health") { _ in ["status": "ok", "service": "star-witness-api"] }
 }
