@@ -376,6 +376,67 @@
     footer a { color: var(--text-muted); text-decoration: none; }
     footer a:hover { color: var(--text); }
 
+    /* AI AGENTS */
+    .agent-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+    }
+    .agent-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .agent-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+    .agent-card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .agent-card .agent-icon {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+    }
+    .agent-links { display: flex; flex-wrap: wrap; gap: 8px; }
+    .agent-link {
+      display: inline-block;
+      padding: 5px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .agent-link:hover { border-color: var(--accent); }
+    .agent-prompt-list {
+      list-style: none;
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .agent-prompt-list li {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+    .agent-prompt-list li::before { content: '"'; color: var(--accent); }
+    .agent-prompt-list li::after  { content: '"'; color: var(--accent); }
+
     @media (max-width: 640px) {
       .endpoints-grid { grid-template-columns: 1fr; }
       .pricing-grid { grid-template-columns: 1fr 1fr; }
@@ -392,6 +453,7 @@
         <a href="#endpoints">Endpoints</a>
         <a href="#pricing">Pricing</a>
         <a href="#quickstart">Docs</a>
+        <a href="#ai-agents">For AI Agents</a>
         <a href="#get-key" class="btn btn-primary">Get API Key</a>
       </div>
     </div>
@@ -627,6 +689,88 @@ curl -H "<span class="key">X-API-Key</span>: <span class="string">sw_free_demo_k
     </div>
   </section>
 
+  <!-- AI AGENTS -->
+  <section class="section" id="ai-agents">
+    <div class="container">
+      <div class="section-label">AI Agents</div>
+      <h2>Built for AI agent discovery</h2>
+      <p>
+        Claude, GPT-4, Gemini, and any agent that supports OpenAPI or function calling
+        can read this API natively. The spec is served at
+        <a href="/v1/openapi" class="agent-link">/v1/openapi</a> for programmatic consumption.
+      </p>
+
+      <div class="agent-grid">
+
+        <div class="agent-card">
+          <div class="agent-icon">📄</div>
+          <h3>OpenAPI Specification</h3>
+          <p>
+            Full OpenAPI 3.0 spec covering all 25 endpoints with parameter types, response
+            schemas, and examples. Import directly into any compatible tool.
+          </p>
+          <div class="agent-links">
+            <a href="/v1/openapi" class="agent-link">GET /v1/openapi</a>
+            <a href="/openapi.yaml" class="agent-link">openapi.yaml</a>
+          </div>
+        </div>
+
+        <div class="agent-card">
+          <div class="agent-icon">🤖</div>
+          <h3>Function Calling Schemas</h3>
+          <p>
+            Pre-built tool schemas for Anthropic and OpenAI function calling formats.
+            Drop them into your agent's tool list — no manual schema writing needed.
+          </p>
+          <div class="agent-links">
+            <a href="https://github.com/hintofintellect/star-witness-api/blob/main/AGENTS.md" class="agent-link">AGENTS.md</a>
+          </div>
+        </div>
+
+        <div class="agent-card">
+          <div class="agent-icon">🔌</div>
+          <h3>MCP Integration</h3>
+          <p>
+            Wrap any endpoint as an MCP tool for Claude Desktop, Cursor, or any
+            MCP-compatible host. Step-by-step server code included.
+          </p>
+          <div class="agent-links">
+            <a href="https://github.com/hintofintellect/star-witness-api/blob/main/AGENTS.md#4-mcp-model-context-protocol-integration" class="agent-link">MCP guide</a>
+          </div>
+        </div>
+
+        <div class="agent-card">
+          <div class="agent-icon">💬</div>
+          <h3>Example agent prompts</h3>
+          <p>Phrases that naturally trigger an agent to call these endpoints:</p>
+          <ul class="agent-prompt-list">
+            <li>What's my horoscope today? I'm a Scorpio.</li>
+            <li>Do a Celtic Cross tarot reading for me.</li>
+            <li>Is Mercury in retrograde right now?</li>
+            <li>What crystals are good for my heart chakra?</li>
+            <li>Calculate my life path number — born June 21, 1990.</li>
+            <li>What's tonight's moon phase?</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="code-block" style="margin-top:40px">
+<span class="comment"># Auto-discover the spec (no auth required)</span>
+curl <span class="url">https://star-witness-api-production.up.railway.app/v1/openapi</span>
+
+<span class="comment"># Anthropic Python SDK — pass function schemas from AGENTS.md</span>
+<span class="key">import</span> anthropic
+client = anthropic.Anthropic(api_key=<span class="string">"..."</span>)
+response = client.messages.create(
+    model=<span class="string">"claude-opus-4-6"</span>,
+    tools=star_witness_tools,   <span class="comment"># schemas from AGENTS.md</span>
+    messages=[{<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: <span class="string">"What's the moon phase tonight?"</span>}]
+)
+      </div>
+    </div>
+  </section>
+
   <!-- CTA -->
   <section class="cta-section" id="get-key">
     <div class="container">
@@ -656,8 +800,9 @@ curl -H "<span class="key">X-API-Key</span>: <span class="string">sw_free_demo_k
       <span>⭐ Star Witness API — Built with Vapor &amp; Swift</span>
       <div style="display:flex;gap:20px">
         <a href="/health">Health</a>
-        <a href="mailto:andrew@starwitness.app">Contact</a>
-        <a href="https://github.com/you/star-witness-api">GitHub</a>
+        <a href="/v1/openapi">OpenAPI</a>
+        <a href="mailto:admin@hintofintellect.com">Contact</a>
+        <a href="https://github.com/hintofintellect/star-witness-api">GitHub</a>
       </div>
     </div>
   </footer>

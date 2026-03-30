@@ -62,4 +62,13 @@ public func routes(_ app: Application) throws {
 
     // MARK: - Health check (no auth required)
     app.get("health") { _ in ["status": "ok", "service": "star-witness-api"] }
+
+    // MARK: - OpenAPI spec (no auth required — for AI agent discovery)
+    app.get("v1", "openapi") { req async throws -> Response in
+        let specPath = app.directory.publicDirectory + "openapi.yaml"
+        var headers = HTTPHeaders()
+        headers.add(name: .contentType, value: "application/yaml")
+        headers.add(name: .accessControlAllowOrigin, value: "*")
+        return req.fileio.streamFile(at: specPath, headers: headers)
+    }
 }

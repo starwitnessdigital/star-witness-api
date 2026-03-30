@@ -1,0 +1,1371 @@
+openapi: 3.0.3
+
+info:
+  title: Star Witness API
+  description: |
+    **Star Witness API** is a spiritual and wellness data API providing astrology, tarot,
+    numerology, crystal, and chakra endpoints — purpose-built for apps, AI agents, and
+    developers building in the wellness space.
+
+    ## Authentication
+    All `/v1/*` endpoints require an `X-API-Key` header. Demo keys are available for local
+    testing (see the quickstart below). Production keys are issued by emailing
+    admin@hintofintellect.com.
+
+    ## Pricing Tiers
+    | Tier       | Price    | Daily Requests | Features                                    |
+    |------------|----------|----------------|---------------------------------------------|
+    | Free       | $0/mo    | 100            | All endpoints, JSON responses               |
+    | Starter    | $9/mo    | 1,000          | Free + email support + usage dashboard      |
+    | Pro        | $29/mo   | 10,000         | Starter + priority support + webhook alerts |
+    | Enterprise | $99/mo   | Unlimited      | Pro + SLA guarantee + dedicated support     |
+
+    ## AI Agent Integration
+    This API is designed for discovery and use by AI agents (Claude, GPT-4, Gemini, etc.).
+    The OpenAPI spec is served at `/v1/openapi` for programmatic consumption. See
+    `AGENTS.md` in the repository for MCP integration instructions and function-calling schemas.
+
+    ## Demo Key
+    `sw_free_demo_key_123` — valid for local development and testing only.
+  version: "1.0.0"
+  contact:
+    name: Star Witness API Support
+    email: admin@hintofintellect.com
+
+servers:
+  - url: https://star-witness-api-production.up.railway.app
+    description: Production
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: Astrology
+    description: Birth charts, horoscopes, moon phases, planetary transits, and retrogrades
+  - name: Tarot
+    description: 78-card tarot deck — draw cards, get readings, explore spreads
+  - name: Numerology
+    description: Numerological readings from birth dates and names
+  - name: Crystals
+    description: Crystal database with chakra and zodiac associations
+  - name: Chakras
+    description: Chakra system — details, associated crystals, and healing practices
+  - name: Meta
+    description: Health check and API discovery
+
+components:
+  securitySchemes:
+    ApiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        API key required for all /v1/* endpoints. Include as `X-API-Key: <your-key>` in every request.
+        Demo key for local testing: `sw_free_demo_key_123`
+
+  schemas:
+
+    # ── Shared Astrology Types ──────────────────────────────────────────────────
+
+    SignDetail:
+      type: object
+      properties:
+        name:        { type: string, example: "Scorpio" }
+        symbol:      { type: string, example: "♏" }
+        element:     { type: string, example: "Water" }
+        modality:    { type: string, example: "Fixed" }
+        rulingPlanet:{ type: string, example: "Pluto" }
+
+    PlanetaryPosition:
+      type: object
+      properties:
+        planet:      { type: string, example: "Moon" }
+        symbol:      { type: string, example: "☽" }
+        sign:        { type: string, example: "Taurus" }
+        signSymbol:  { type: string, example: "♉" }
+        element:     { type: string, example: "Earth" }
+        degrees:     { type: number, format: double, example: 14.72 }
+        house:       { type: integer, nullable: true, example: 7 }
+        isRetrograde:{ type: boolean, example: false }
+
+    HouseCusp:
+      type: object
+      properties:
+        house:      { type: integer, example: 1 }
+        sign:       { type: string, example: "Aries" }
+        signSymbol: { type: string, example: "♈" }
+        degrees:    { type: number, format: double, example: 5.33 }
+
+    PlanetaryAspect:
+      type: object
+      properties:
+        planet1:       { type: string, example: "Sun" }
+        planet1Symbol: { type: string, example: "☉" }
+        planet2:       { type: string, example: "Mars" }
+        planet2Symbol: { type: string, example: "♂" }
+        aspect:        { type: string, example: "Trine" }
+        aspectSymbol:  { type: string, example: "△" }
+        nature:        { type: string, example: "Harmonious" }
+        orb:           { type: number, format: double, example: 2.4 }
+        description:   { type: string, example: "Natural flow of energy and effortless harmony" }
+        isApplying:    { type: boolean, example: true }
+
+    RetrogradeStatus:
+      type: object
+      properties:
+        planet:       { type: string, example: "Mercury" }
+        symbol:       { type: string, example: "☿" }
+        isRetrograde: { type: boolean, example: false }
+
+    RetrogradePeriod:
+      type: object
+      properties:
+        startDate:   { type: string, format: date, example: "2025-03-15" }
+        endDate:     { type: string, format: date, example: "2025-04-07" }
+        shadowStart: { type: string, format: date, example: "2025-03-01" }
+        shadowEnd:   { type: string, format: date, example: "2025-04-22" }
+        zodiacSign:  { type: string, example: "Pisces" }
+        description: { type: string, example: "Mercury stations retrograde in Pisces" }
+
+    # ── Endpoint Response Schemas ───────────────────────────────────────────────
+
+    BirthChartResponse:
+      type: object
+      properties:
+        date:       { type: string, format: date, example: "1990-04-15" }
+        time:       { type: string, example: "14:30" }
+        latitude:   { type: number, format: double, example: 40.7128 }
+        longitude:  { type: number, format: double, example: -74.006 }
+        sunSign:    { $ref: "#/components/schemas/SignDetail" }
+        moonSign:   { $ref: "#/components/schemas/SignDetail" }
+        risingSign: { $ref: "#/components/schemas/SignDetail" }
+        planets:
+          type: array
+          items: { $ref: "#/components/schemas/PlanetaryPosition" }
+        houses:
+          type: array
+          items: { $ref: "#/components/schemas/HouseCusp" }
+        aspects:
+          type: array
+          items: { $ref: "#/components/schemas/PlanetaryAspect" }
+        calculationNote: { type: string }
+
+    CompatibilityResponse:
+      type: object
+      properties:
+        overallScore:  { type: integer, minimum: 0, maximum: 100, example: 78 }
+        overallRating: { type: string, example: "Strong Connection 💫" }
+        breakdown:
+          type: object
+          properties:
+            sunCompatibility:   { type: integer, example: 80 }
+            moonCompatibility:  { type: integer, example: 75 }
+            venusCompatibility: { type: integer, example: 85 }
+            marsCompatibility:  { type: integer, example: 60 }
+            attractionScore:    { type: integer, example: 82 }
+        person1:
+          type: object
+          properties:
+            sunSign:   { type: string, example: "Scorpio" }
+            moonSign:  { type: string, example: "Cancer" }
+            venusSign: { type: string, example: "Libra" }
+            marsSign:  { type: string, example: "Aries" }
+            element:   { type: string, example: "Water" }
+        person2:
+          type: object
+          properties:
+            sunSign:   { type: string, example: "Pisces" }
+            moonSign:  { type: string, example: "Taurus" }
+            venusSign: { type: string, example: "Aquarius" }
+            marsSign:  { type: string, example: "Sagittarius" }
+            element:   { type: string, example: "Water" }
+        elementHarmony: { type: string, example: "Same element (Water) — deep intuitive understanding." }
+        synastryHighlights:
+          type: array
+          items: { type: string }
+          example: ["Strong Sun-Moon connection — one person's core identity resonates deeply with the other's emotional needs."]
+        calculationNote: { type: string }
+
+    DailyHoroscopeResponse:
+      type: object
+      properties:
+        sign:        { type: string, example: "Scorpio" }
+        signSymbol:  { type: string, example: "♏" }
+        date:        { type: string, format: date, example: "2025-03-30" }
+        horoscope:   { type: string, example: "Transformation awaits — today's Pluto transit amplifies your natural magnetism." }
+        mood:        { type: string, example: "Intense" }
+        moodTagline: { type: string, example: "Channel your power wisely." }
+        luckyNumbers:
+          type: array
+          items: { type: integer }
+          example: [8, 11, 22]
+        luckyColor:   { type: string, example: "Deep red" }
+        element:      { type: string, example: "Water" }
+        rulingPlanet: { type: string, example: "Pluto" }
+
+    TransitsResponse:
+      type: object
+      properties:
+        date:         { type: string, format: date, example: "2025-03-30" }
+        planets:
+          type: array
+          items: { $ref: "#/components/schemas/PlanetaryPosition" }
+        aspects:
+          type: array
+          items: { $ref: "#/components/schemas/PlanetaryAspect" }
+        retrogradeStatus:
+          type: array
+          items: { $ref: "#/components/schemas/RetrogradeStatus" }
+        moonPhase:      { type: string, example: "Waxing Gibbous" }
+        moonPhaseEmoji: { type: string, example: "🌔" }
+        moonSign:       { type: string, example: "Virgo" }
+        calculationNote:{ type: string }
+
+    MoonPhaseResponse:
+      type: object
+      properties:
+        date:                { type: string, format: date, example: "2025-03-30" }
+        phase:               { type: string, example: "Waxing Gibbous" }
+        phaseEmoji:          { type: string, example: "🌔" }
+        illuminationPercent: { type: number, format: double, example: 72.4 }
+        cycleDay:            { type: integer, example: 19 }
+        moonSign:            { type: string, example: "Virgo" }
+        moonSignSymbol:      { type: string, example: "♍" }
+        nextFullMoon:        { type: string, format: date, example: "2025-04-01" }
+        nextNewMoon:         { type: string, format: date, example: "2025-04-15" }
+        ritualSuggestion:    { type: string, example: "Refine and perfect. The full manifestation is close — sweat the details." }
+        energyDescription:   { type: string, example: "Building intensity. Refinement and perseverance pay off now." }
+
+    RetrogradeResponse:
+      type: object
+      properties:
+        planet:               { type: string, example: "Mercury" }
+        symbol:               { type: string, example: "☿" }
+        meaning:              { type: string, example: "Communication, thinking, learning" }
+        year:                 { type: integer, example: 2025 }
+        isCurrentlyRetrograde:{ type: boolean, example: false }
+        nextRetrogradeStart:  { type: string, format: date, nullable: true, example: "2025-07-18" }
+        periods:
+          type: array
+          items: { $ref: "#/components/schemas/RetrogradePeriod" }
+        whatItMeans:      { type: string }
+        calculationNote:  { type: string }
+
+    TarotCard:
+      type: object
+      properties:
+        name:             { type: string, example: "The High Priestess" }
+        arcana:           { type: string, enum: [Major, Minor], example: "Major" }
+        suit:             { type: string, nullable: true, example: null }
+        number:           { type: integer, example: 2 }
+        uprightMeaning:   { type: string, example: "Intuition, mystery, inner knowledge" }
+        reversedMeaning:  { type: string, example: "Secrets, disconnected from intuition" }
+        keywords:
+          type: array
+          items: { type: string }
+          example: ["intuition", "mystery", "subconscious"]
+        element:            { type: string, example: "Water" }
+        zodiacAssociation:  { type: string, example: "Moon" }
+        yesNo:              { type: string, enum: [Yes, No, Maybe], example: "Maybe" }
+
+    TarotSpread:
+      type: object
+      properties:
+        name:       { type: string, example: "Three-Card Spread" }
+        slug:       { type: string, example: "three-card" }
+        cardCount:  { type: integer, example: 3 }
+        description:{ type: string, example: "Past, present, and future in three cards." }
+        positions:
+          type: array
+          items: { type: string }
+          example: ["Past", "Present", "Future"]
+
+    TarotDrawResponse:
+      type: object
+      properties:
+        count: { type: integer, example: 3 }
+        cards:
+          type: array
+          items: { $ref: "#/components/schemas/TarotCard" }
+
+    TarotReadingResponse:
+      type: object
+      properties:
+        spread: { $ref: "#/components/schemas/TarotSpread" }
+        cards:
+          type: array
+          items:
+            type: object
+            properties:
+              position:            { type: string, example: "Past" }
+              positionDescription: { type: string, example: "What brought you here" }
+              card:                { $ref: "#/components/schemas/TarotCard" }
+              isReversed:          { type: boolean, example: false }
+              interpretation:      { type: string, example: "The Fool reversed in the past position suggests a reckless beginning that has shaped current circumstances." }
+        overallInterpretation: { type: string }
+
+    NumerologyResult:
+      type: object
+      properties:
+        type:       { type: string, example: "Life Path" }
+        number:     { type: integer, example: 7 }
+        name:       { type: string, example: "The Seeker" }
+        meaning:    { type: string, example: "Deep thinker, spiritual seeker, analytical mind." }
+        traits:
+          type: array
+          items: { type: string }
+          example: ["introspective", "analytical", "spiritual"]
+        strengths:
+          type: array
+          items: { type: string }
+          example: ["research", "wisdom", "intuition"]
+        challenges:
+          type: array
+          items: { type: string }
+          example: ["isolation", "perfectionism"]
+        lifeTheme: { type: string, example: "Understanding the deeper mysteries of existence." }
+
+    FullNumerologyReading:
+      type: object
+      properties:
+        inputName:      { type: string, nullable: true, example: "Jane Doe" }
+        inputBirthdate: { type: string, nullable: true, example: "1990-06-21" }
+        lifePath:       { $ref: "#/components/schemas/NumerologyResult", nullable: true }
+        expression:     { $ref: "#/components/schemas/NumerologyResult", nullable: true }
+        soulUrge:       { $ref: "#/components/schemas/NumerologyResult", nullable: true }
+        personality:    { $ref: "#/components/schemas/NumerologyResult", nullable: true }
+        summary:        { type: string }
+
+    CrystalProperties:
+      type: object
+      properties:
+        healing:
+          type: array
+          items: { type: string }
+          example: ["relieves stress", "promotes calm"]
+        emotional:
+          type: array
+          items: { type: string }
+          example: ["soothes anxiety", "enhances self-love"]
+        spiritual:
+          type: array
+          items: { type: string }
+          example: ["deepens meditation", "opens crown chakra"]
+
+    Crystal:
+      type: object
+      properties:
+        name:        { type: string, example: "Amethyst" }
+        description: { type: string, example: "A violet variety of quartz prized for its spiritual properties." }
+        properties:  { $ref: "#/components/schemas/CrystalProperties" }
+        chakraAssociations:
+          type: array
+          items: { type: string }
+          example: ["Crown", "Third Eye"]
+        zodiacAssociations:
+          type: array
+          items: { type: string }
+          example: ["Pisces", "Aquarius", "Capricorn"]
+        element:  { type: string, example: "Air" }
+        hardness: { type: string, example: "7" }
+        color:    { type: string, example: "Violet to purple" }
+        cleansingMethods:
+          type: array
+          items: { type: string }
+          example: ["moonlight", "sound bath", "sage smudging"]
+
+    CrystalFilterResponse:
+      type: object
+      properties:
+        filter:      { type: string, example: "chakra" }
+        filterValue: { type: string, example: "Heart" }
+        count:       { type: integer, example: 5 }
+        crystals:
+          type: array
+          items: { $ref: "#/components/schemas/Crystal" }
+
+    Chakra:
+      type: object
+      properties:
+        name:         { type: string, example: "Heart" }
+        sanskritName: { type: string, example: "Anahata" }
+        number:       { type: integer, example: 4 }
+        location:     { type: string, example: "Center of the chest" }
+        color:        { type: string, example: "Green" }
+        element:      { type: string, example: "Air" }
+        purpose:      { type: string, example: "Love, compassion, forgiveness, connection" }
+        balancedTraits:
+          type: array
+          items: { type: string }
+          example: ["compassionate", "loving", "empathetic"]
+        imbalancedTraits:
+          type: array
+          items: { type: string }
+          example: ["codependent", "jealous", "closed off"]
+        associatedCrystals:
+          type: array
+          items: { type: string }
+          example: ["Rose Quartz", "Green Aventurine", "Malachite"]
+        healingPractices:
+          type: array
+          items: { type: string }
+          example: ["heart-opening yoga poses", "loving-kindness meditation"]
+        affirmations:
+          type: array
+          items: { type: string }
+          example: ["I am worthy of love", "I give and receive love freely"]
+        foods:
+          type: array
+          items: { type: string }
+          example: ["leafy greens", "broccoli", "green tea"]
+
+    ChakraCrystalsResponse:
+      type: object
+      properties:
+        chakra:       { type: string, example: "Heart" }
+        sanskritName: { type: string, example: "Anahata" }
+        color:        { type: string, example: "Green" }
+        crystalNames:
+          type: array
+          items: { type: string }
+          example: ["Rose Quartz", "Green Aventurine"]
+        crystals:
+          type: array
+          items: { $ref: "#/components/schemas/Crystal" }
+
+    ChakraPracticesResponse:
+      type: object
+      properties:
+        chakra:       { type: string, example: "Heart" }
+        sanskritName: { type: string, example: "Anahata" }
+        purpose:      { type: string, example: "Love, compassion, forgiveness, connection" }
+        healingPractices:
+          type: array
+          items: { type: string }
+        affirmations:
+          type: array
+          items: { type: string }
+        foods:
+          type: array
+          items: { type: string }
+        balancedTraits:
+          type: array
+          items: { type: string }
+        imbalancedTraits:
+          type: array
+          items: { type: string }
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:  { type: boolean, example: true }
+        reason: { type: string, example: "Missing required query parameter: sign" }
+        code:   { type: string, example: "MISSING_PARAM" }
+
+security:
+  - ApiKeyHeader: []
+
+paths:
+
+  # ── Meta ─────────────────────────────────────────────────────────────────────
+
+  /health:
+    get:
+      tags: [Meta]
+      summary: Health check
+      description: Returns the API health status. No authentication required.
+      security: []
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:  { type: string, example: "ok" }
+                  service: { type: string, example: "star-witness-api" }
+
+  /v1/openapi:
+    get:
+      tags: [Meta]
+      summary: OpenAPI specification
+      description: |
+        Returns this OpenAPI specification as JSON for programmatic consumption by AI agents,
+        client generators, and API explorers. No authentication required.
+      security: []
+      operationId: getOpenApiSpec
+      responses:
+        "200":
+          description: OpenAPI 3.0 specification object
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # ── Astrology ─────────────────────────────────────────────────────────────────
+
+  /v1/birth-chart:
+    get:
+      tags: [Astrology]
+      summary: Birth chart
+      description: |
+        Calculates a complete natal birth chart including Sun/Moon/Rising signs, all 10
+        planetary positions with house placements, 12 house cusps, and major aspects
+        (conjunction, sextile, square, trine, opposition).
+
+        **Required parameters:** `date`, `time`, `latitude`, `longitude`
+      operationId: getBirthChart
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+          description: Birth date in YYYY-MM-DD format
+          example: "1990-04-15"
+        - name: time
+          in: query
+          required: true
+          schema: { type: string, pattern: "^\\d{2}:\\d{2}$" }
+          description: Birth time in HH:MM (24-hour) format
+          example: "14:30"
+        - name: latitude
+          in: query
+          required: true
+          schema: { type: number, format: double, minimum: -90, maximum: 90 }
+          description: Birth location latitude in decimal degrees (positive = North)
+          example: 40.7128
+        - name: longitude
+          in: query
+          required: true
+          schema: { type: number, format: double, minimum: -180, maximum: 180 }
+          description: Birth location longitude in decimal degrees (positive = East)
+          example: -74.006
+        - name: timezone
+          in: query
+          required: false
+          schema: { type: number, format: double, default: 0 }
+          description: UTC offset in hours (e.g. -5 for EST, 5.5 for IST). Defaults to 0 (UTC).
+          example: -5
+      responses:
+        "200":
+          description: Complete natal birth chart
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BirthChartResponse" }
+        "400":
+          description: Missing or invalid parameters
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/compatibility:
+    get:
+      tags: [Astrology]
+      summary: Relationship compatibility
+      description: |
+        Calculates astrological compatibility between two people. Scores Sun, Moon, Venus,
+        and Mars sign harmony, derives an overall score (0–100), and generates synastry
+        highlights based on the strongest planetary connections.
+
+        **Required parameters:** all eight `person1_*` and `person2_*` params
+      operationId: getCompatibility
+      parameters:
+        - name: person1_date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+          description: Person 1 birth date (YYYY-MM-DD)
+          example: "1990-04-15"
+        - name: person1_time
+          in: query
+          required: true
+          schema: { type: string }
+          description: Person 1 birth time (HH:MM, 24-hour)
+          example: "14:30"
+        - name: person1_lat
+          in: query
+          required: true
+          schema: { type: number, format: double }
+          description: Person 1 birth latitude
+          example: 40.7128
+        - name: person1_lon
+          in: query
+          required: true
+          schema: { type: number, format: double }
+          description: Person 1 birth longitude
+          example: -74.006
+        - name: person2_date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+          description: Person 2 birth date (YYYY-MM-DD)
+          example: "1992-11-08"
+        - name: person2_time
+          in: query
+          required: true
+          schema: { type: string }
+          description: Person 2 birth time (HH:MM, 24-hour)
+          example: "09:15"
+        - name: person2_lat
+          in: query
+          required: true
+          schema: { type: number, format: double }
+          description: Person 2 birth latitude
+          example: 34.0522
+        - name: person2_lon
+          in: query
+          required: true
+          schema: { type: number, format: double }
+          description: Person 2 birth longitude
+          example: -118.2437
+        - name: timezone
+          in: query
+          required: false
+          schema: { type: number, format: double, default: 0 }
+          description: UTC offset in hours applied to both people (default 0)
+          example: -8
+      responses:
+        "200":
+          description: Compatibility analysis
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CompatibilityResponse" }
+        "400":
+          description: Missing or invalid parameters
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/daily-horoscope:
+    get:
+      tags: [Astrology]
+      summary: Daily horoscope
+      description: |
+        Returns a daily horoscope for the given zodiac sign including a narrative reading,
+        mood, lucky numbers, lucky color, and elemental info.
+      operationId: getDailyHoroscope
+      parameters:
+        - name: sign
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [aries, taurus, gemini, cancer, leo, virgo, libra, scorpio, sagittarius, capricorn, aquarius, pisces]
+          description: Zodiac sign (case-insensitive)
+          example: "scorpio"
+        - name: date
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: Date in YYYY-MM-DD format (defaults to today UTC)
+          example: "2025-03-30"
+      responses:
+        "200":
+          description: Daily horoscope
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DailyHoroscopeResponse" }
+        "400":
+          description: Missing or invalid sign
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/transits:
+    get:
+      tags: [Astrology]
+      summary: Current planetary transits
+      description: |
+        Returns a snapshot of the current sky: all 10 planetary positions, active aspects
+        between transiting planets, retrograde status for the 8 planets that can retrograde,
+        and the current moon phase.
+
+        All parameters are optional — calling with no params returns today's sky.
+      operationId: getTransits
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: Date for the sky snapshot (defaults to today UTC)
+          example: "2025-03-30"
+        - name: latitude
+          in: query
+          required: false
+          schema: { type: number, format: double }
+          description: Observer latitude (used for house-based transits)
+          example: 40.7128
+        - name: longitude
+          in: query
+          required: false
+          schema: { type: number, format: double }
+          description: Observer longitude
+          example: -74.006
+        - name: timezone
+          in: query
+          required: false
+          schema: { type: number, format: double, default: 0 }
+          description: UTC offset in hours (default 0)
+      responses:
+        "200":
+          description: Current planetary transits
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TransitsResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/moon-phase:
+    get:
+      tags: [Astrology]
+      summary: Moon phase
+      description: |
+        Returns the current (or requested) moon phase including phase name, emoji,
+        illumination percentage, cycle day, moon sign, next full and new moon dates,
+        a ritual suggestion, and an energy description.
+      operationId: getMoonPhase
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: Date in YYYY-MM-DD format (defaults to today UTC)
+          example: "2025-03-30"
+      responses:
+        "200":
+          description: Moon phase details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MoonPhaseResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/retrograde:
+    get:
+      tags: [Astrology]
+      summary: Planetary retrograde periods
+      description: |
+        Returns retrograde periods for a given planet in a given year, including start/end
+        dates, shadow period dates, the zodiac sign the retrograde occurs in, and what the
+        retrograde means for daily life.
+      operationId: getRetrograde
+      parameters:
+        - name: planet
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [mercury, venus, mars, jupiter, saturn, uranus, neptune, pluto]
+            default: mercury
+          description: Planet to query (Sun and Moon do not retrograde). Defaults to mercury.
+          example: "mercury"
+        - name: year
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1900, maximum: 2200 }
+          description: Year to query retrograde periods for (defaults to current year)
+          example: 2025
+      responses:
+        "200":
+          description: Retrograde data for the requested planet and year
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RetrogradeResponse" }
+        "400":
+          description: Invalid planet name
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  # ── Tarot ─────────────────────────────────────────────────────────────────────
+
+  /v1/tarot/cards:
+    get:
+      tags: [Tarot]
+      summary: List all tarot cards
+      description: Returns the full 78-card tarot deck with meanings, keywords, and associations.
+      operationId: listTarotCards
+      responses:
+        "200":
+          description: Array of all 78 tarot cards
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TarotCard" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/tarot/card/{name}:
+    get:
+      tags: [Tarot]
+      summary: Get a single tarot card
+      description: |
+        Returns details for a specific tarot card by name. Use lowercase hyphenated names,
+        e.g. `the-fool`, `ace-of-wands`, `queen-of-cups`.
+      operationId: getTarotCard
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+          description: Card name in lowercase with hyphens (spaces are also accepted)
+          example: "the-high-priestess"
+      responses:
+        "200":
+          description: Tarot card details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TarotCard" }
+        "404":
+          description: Card not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/tarot/draw:
+    get:
+      tags: [Tarot]
+      summary: Draw random tarot cards
+      description: Draws one or more random cards from a shuffled deck.
+      operationId: drawTarotCards
+      parameters:
+        - name: count
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 78, default: 1 }
+          description: Number of cards to draw (1–78, default 1)
+          example: 3
+      responses:
+        "200":
+          description: Drawn cards
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TarotDrawResponse" }
+        "400":
+          description: Invalid count value
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/tarot/spreads:
+    get:
+      tags: [Tarot]
+      summary: List available tarot spreads
+      description: |
+        Returns all available spread layouts. Spread slugs can be passed to the
+        `/v1/tarot/reading` endpoint.
+
+        Available spreads: `single`, `three-card`, `celtic-cross`, `love`, `career`, `mind-body-spirit`
+      operationId: listTarotSpreads
+      responses:
+        "200":
+          description: Available spreads
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TarotSpread" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/tarot/reading:
+    get:
+      tags: [Tarot]
+      summary: Full tarot reading
+      description: |
+        Performs a complete tarot reading for the specified spread. Each card position
+        receives a randomly drawn card with an upright/reversed orientation and a
+        position-specific interpretation. An overall interpretation is also provided.
+      operationId: getTarotReading
+      parameters:
+        - name: spread
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [single, three-card, celtic-cross, love, career, mind-body-spirit]
+            default: three-card
+          description: Spread slug (defaults to three-card)
+          example: "celtic-cross"
+      responses:
+        "200":
+          description: Full tarot reading
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TarotReadingResponse" }
+        "400":
+          description: Unknown spread slug
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  # ── Numerology ────────────────────────────────────────────────────────────────
+
+  /v1/numerology/life-path:
+    get:
+      tags: [Numerology]
+      summary: Life path number
+      description: |
+        Calculates the Life Path number from a birth date. The Life Path number is the most
+        important number in numerology — it describes the soul's journey and core personality.
+      operationId: getLifePath
+      parameters:
+        - name: birthdate
+          in: query
+          required: true
+          schema: { type: string, format: date }
+          description: Birth date in YYYY-MM-DD format
+          example: "1990-06-21"
+      responses:
+        "200":
+          description: Life path numerology result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NumerologyResult" }
+        "400":
+          description: Missing or invalid birthdate
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/numerology/expression:
+    get:
+      tags: [Numerology]
+      summary: Expression number
+      description: |
+        Calculates the Expression (Destiny) number from a full birth name.
+        Represents natural talents, abilities, and the potential you were born with.
+      operationId: getExpression
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema: { type: string }
+          description: Full birth name (as it appears on birth certificate)
+          example: "Jane Elizabeth Doe"
+      responses:
+        "200":
+          description: Expression numerology result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NumerologyResult" }
+        "400":
+          description: Missing name
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/numerology/soul-urge:
+    get:
+      tags: [Numerology]
+      summary: Soul urge number
+      description: |
+        Calculates the Soul Urge (Heart's Desire) number from the vowels in a full birth name.
+        Reveals the inner motivations and deepest desires that drive decision-making.
+      operationId: getSoulUrge
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema: { type: string }
+          description: Full birth name
+          example: "Jane Elizabeth Doe"
+      responses:
+        "200":
+          description: Soul urge numerology result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NumerologyResult" }
+        "400":
+          description: Missing name
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/numerology/personality:
+    get:
+      tags: [Numerology]
+      summary: Personality number
+      description: |
+        Calculates the Personality number from the consonants in a full birth name.
+        Describes how others perceive you — your outer personality and first impression.
+      operationId: getPersonality
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema: { type: string }
+          description: Full birth name
+          example: "Jane Elizabeth Doe"
+      responses:
+        "200":
+          description: Personality numerology result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NumerologyResult" }
+        "400":
+          description: Missing name
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/numerology/full-reading:
+    get:
+      tags: [Numerology]
+      summary: Full numerology reading
+      description: |
+        Combines all four numerology calculations into a single reading. Provide a name,
+        birthdate, or both. At least one parameter is required.
+
+        - `birthdate` only → Life Path number
+        - `name` only → Expression, Soul Urge, and Personality numbers
+        - both → all four numbers + summary
+      operationId: getFullNumerologyReading
+      parameters:
+        - name: name
+          in: query
+          required: false
+          schema: { type: string }
+          description: Full birth name (required for expression/soul-urge/personality)
+          example: "Jane Elizabeth Doe"
+        - name: birthdate
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: Birth date in YYYY-MM-DD (required for life path)
+          example: "1990-06-21"
+      responses:
+        "200":
+          description: Complete numerology reading
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FullNumerologyReading" }
+        "400":
+          description: Neither name nor birthdate provided
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  # ── Crystals ──────────────────────────────────────────────────────────────────
+
+  /v1/crystals:
+    get:
+      tags: [Crystals]
+      summary: List all crystals
+      description: Returns the full crystal database with properties, chakra associations, zodiac associations, and cleansing methods.
+      operationId: listCrystals
+      responses:
+        "200":
+          description: Array of all crystals
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Crystal" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/crystals/{name}:
+    get:
+      tags: [Crystals]
+      summary: Get a single crystal
+      description: |
+        Returns details for a specific crystal by name. Use lowercase hyphenated names,
+        e.g. `amethyst`, `rose-quartz`, `black-tourmaline`.
+      operationId: getCrystal
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+          description: Crystal name in lowercase with hyphens
+          example: "amethyst"
+      responses:
+        "200":
+          description: Crystal details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Crystal" }
+        "404":
+          description: Crystal not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/crystals/by-chakra/{chakra}:
+    get:
+      tags: [Crystals]
+      summary: Crystals by chakra
+      description: Returns all crystals associated with a specific chakra.
+      operationId: getCrystalsByChakra
+      parameters:
+        - name: chakra
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [root, sacral, solar-plexus, heart, throat, third-eye, crown]
+          description: Chakra name (lowercase, hyphenated)
+          example: "heart"
+      responses:
+        "200":
+          description: Filtered crystal list
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CrystalFilterResponse" }
+        "404":
+          description: No crystals found for chakra
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/crystals/by-zodiac/{sign}:
+    get:
+      tags: [Crystals]
+      summary: Crystals by zodiac sign
+      description: Returns all crystals associated with a specific zodiac sign.
+      operationId: getCrystalsByZodiac
+      parameters:
+        - name: sign
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [aries, taurus, gemini, cancer, leo, virgo, libra, scorpio, sagittarius, capricorn, aquarius, pisces]
+          description: Zodiac sign (lowercase)
+          example: "pisces"
+      responses:
+        "200":
+          description: Filtered crystal list
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CrystalFilterResponse" }
+        "404":
+          description: No crystals found for sign
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/crystals/random:
+    get:
+      tags: [Crystals]
+      summary: Random crystal
+      description: Returns a single randomly selected crystal — perfect for a "crystal of the day" feature.
+      operationId: getRandomCrystal
+      responses:
+        "200":
+          description: A random crystal
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Crystal" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  # ── Chakras ───────────────────────────────────────────────────────────────────
+
+  /v1/chakras:
+    get:
+      tags: [Chakras]
+      summary: List all chakras
+      description: Returns all 7 chakras with Sanskrit names, colors, elements, purposes, and crystal/practice associations.
+      operationId: listChakras
+      responses:
+        "200":
+          description: All 7 chakras
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Chakra" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/chakras/{name}:
+    get:
+      tags: [Chakras]
+      summary: Get a single chakra
+      description: |
+        Returns details for a specific chakra. Accepts English names (`root`, `heart`,
+        `third-eye`) or Sanskrit names (`muladhara`, `anahata`, `ajna`).
+      operationId: getChakra
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+          description: Chakra name in English or Sanskrit (lowercase, hyphens for spaces)
+          example: "heart"
+      responses:
+        "200":
+          description: Chakra details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Chakra" }
+        "404":
+          description: Chakra not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/chakras/{name}/crystals:
+    get:
+      tags: [Chakras]
+      summary: Crystals for a chakra
+      description: Returns the crystals associated with a specific chakra, including full crystal details.
+      operationId: getChakraCrystals
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+          description: Chakra name (English or Sanskrit, lowercase, hyphens for spaces)
+          example: "third-eye"
+      responses:
+        "200":
+          description: Chakra with associated crystals
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChakraCrystalsResponse" }
+        "404":
+          description: Chakra not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/chakras/{name}/practices:
+    get:
+      tags: [Chakras]
+      summary: Healing practices for a chakra
+      description: Returns healing practices, affirmations, foods, and balanced/imbalanced traits for a specific chakra.
+      operationId: getChakraPractices
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+          description: Chakra name (English or Sanskrit, lowercase, hyphens for spaces)
+          example: "crown"
+      responses:
+        "200":
+          description: Chakra healing practices and affirmations
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChakraPracticesResponse" }
+        "404":
+          description: Chakra not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
