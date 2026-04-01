@@ -69,6 +69,15 @@ public func routes(_ app: Application) throws {
     contentGroup.get("daily-card", use: content.dailyCard)
     contentGroup.get("meditation", use: content.meditation)
 
+    // MARK: Web Data Extraction endpoints
+    let extraction = ExtractionController()
+    let extractGroup = v1.grouped("extract")
+    extractGroup.get("article", use: extraction.article)
+    extractGroup.get("product", use: extraction.product)
+    extractGroup.get("metadata", use: extraction.metadata)
+    extractGroup.get("links", use: extraction.links)
+    extractGroup.get("text", use: extraction.text)
+
     // MARK: - Health check (no auth required)
     app.get("health") { _ in ["status": "ok", "service": "star-witness-api"] }
 
