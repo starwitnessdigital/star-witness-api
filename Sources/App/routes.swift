@@ -78,6 +78,15 @@ public func routes(_ app: Application) throws {
     extractGroup.get("links", use: extraction.links)
     extractGroup.get("text", use: extraction.text)
 
+    // MARK: Utility Tools endpoints
+    let tools = ToolsController()
+    let toolsGroup = v1.grouped("tools")
+    toolsGroup.get("screenshot", use: tools.screenshot)
+    toolsGroup.get("pdf", use: tools.urlToPDF)
+    toolsGroup.post("html-to-pdf", use: tools.htmlToPDF)
+    toolsGroup.get("validate-email", use: tools.validateEmail)
+    toolsGroup.get("dns", use: tools.dnsLookup)
+
     // MARK: - Health check (no auth required)
     app.get("health") { _ in ["status": "ok", "service": "star-witness-api"] }
 
