@@ -1,4 +1,7 @@
 import Vapor
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
 
 /// Utility tool endpoints for AI agents and automation workflows.
 ///
