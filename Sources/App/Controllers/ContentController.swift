@@ -101,6 +101,67 @@ struct ContentController {
         return ContentService.meditation(theme: themeParam, durationMinutes: durationParam)
     }
 
+    // MARK: - Compatibility Report
+
+    func compatibilityReport(req: Request) async throws -> CompatibilityReportResponse {
+        guard let s1Str = req.query[String.self, at: "sign1"] else {
+            throw Abort(.badRequest, reason: "Missing required query parameter: sign1. Valid values: \(ZodiacSign.allCases.map { $0.rawValue.lowercased() }.joined(separator: ", "))")
+        }
+        guard let s2Str = req.query[String.self, at: "sign2"] else {
+            throw Abort(.badRequest, reason: "Missing required query parameter: sign2. Valid values: \(ZodiacSign.allCases.map { $0.rawValue.lowercased() }.joined(separator: ", "))")
+        }
+
+        let valid = ZodiacSign.allCases.map { $0.rawValue.lowercased() }.joined(separator: ", ")
+        let s1Input = s1Str.prefix(1).uppercased() + s1Str.dropFirst().lowercased()
+        guard let sign1 = ZodiacSign(rawValue: s1Input) else {
+            throw Abort(.badRequest, reason: "Invalid sign1 '\(s1Str)'. Valid values: \(valid)")
+        }
+        let s2Input = s2Str.prefix(1).uppercased() + s2Str.dropFirst().lowercased()
+        guard let sign2 = ZodiacSign(rawValue: s2Input) else {
+            throw Abort(.badRequest, reason: "Invalid sign2 '\(s2Str)'. Valid values: \(valid)")
+        }
+
+        return RichContentService.compatibilityReport(sign1: sign1, sign2: sign2)
+    }
+
+    // MARK: - Zodiac Profile
+
+    func zodiacProfile(req: Request) async throws -> ZodiacProfileResponse {
+        guard let signStr = req.query[String.self, at: "sign"] else {
+            throw Abort(.badRequest, reason: "Missing required query parameter: sign. Valid values: \(ZodiacSign.allCases.map { $0.rawValue.lowercased() }.joined(separator: ", "))")
+        }
+
+        let signInput = signStr.prefix(1).uppercased() + signStr.dropFirst().lowercased()
+        guard let sign = ZodiacSign(rawValue: signInput) else {
+            let valid = ZodiacSign.allCases.map { $0.rawValue.lowercased() }.joined(separator: ", ")
+            throw Abort(.badRequest, reason: "Invalid sign '\(signStr)'. Valid values: \(valid)")
+        }
+
+        return RichContentService.zodiacProfile(sign: sign)
+    }
+
+    // MARK: - Transit Forecast
+
+    func transitForecast(req: Request) async throws -> TransitForecastResponse {
+        guard let signStr = req.query[String.self, at: "sign"] else {
+            throw Abort(.badRequest, reason: "Missing required query parameter: sign. Valid values: \(ZodiacSign.allCases.map { $0.rawValue.lowercased() }.joined(separator: ", "))")
+        }
+
+        let signInput = signStr.prefix(1).uppercased() + signStr.dropFirst().lowercased()
+        guard let sign = ZodiacSign(rawValue: signInput) else {
+            let valid = ZodiacSign.allCases.map { $0.rawValue.lowercased() }.joined(separator: ", ")
+            throw Abort(.badRequest, reason: "Invalid sign '\(signStr)'. Valid values: \(valid)")
+        }
+
+        let periodParam = (req.query[String.self, at: "period"] ?? "weekly").lowercased()
+        guard RichContentService.validPeriods.contains(periodParam) else {
+            throw Abort(.badRequest, reason: "Invalid period '\(periodParam)'. Valid values: \(RichContentService.validPeriods.joined(separator: ", "))")
+        }
+
+        let (year, month, day) = parseDateParam(req: req)
+        return RichContentService.transitForecast(sign: sign, period: periodParam, year: year, month: month, day: day)
+    }
+
     // MARK: - Helpers
 
     private func parseDateParam(req: Request) -> (year: Int, month: Int, day: Int) {

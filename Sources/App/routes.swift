@@ -68,6 +68,9 @@ public func routes(_ app: Application) throws {
     contentGroup.get("journal-prompts", use: content.journalPrompts)
     contentGroup.get("daily-card", use: content.dailyCard)
     contentGroup.get("meditation", use: content.meditation)
+    contentGroup.get("compatibility-report", use: content.compatibilityReport)
+    contentGroup.get("zodiac-profile", use: content.zodiacProfile)
+    contentGroup.get("transit-forecast", use: content.transitForecast)
 
     // MARK: Web Data Extraction endpoints
     let extraction = ExtractionController()
