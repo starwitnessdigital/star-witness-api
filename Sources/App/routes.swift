@@ -90,6 +90,15 @@ public func routes(_ app: Application) throws {
     toolsGroup.get("validate-email", use: tools.validateEmail)
     toolsGroup.get("dns", use: tools.dnsLookup)
 
+    // MARK: Siri / App Intents endpoints (voice-optimized)
+    let siri = SiriController()
+    let siriGroup = v1.grouped("siri")
+    siriGroup.get("horoscope", use: siri.horoscope)
+    siriGroup.get("retrograde", use: siri.retrograde)
+    siriGroup.get("moon", use: siri.moon)
+    siriGroup.get("compatibility", use: siri.compatibility)
+    siriGroup.get("lucky", use: siri.lucky)
+
     // MARK: - Health check (no auth required)
     app.get("health") { _ in ["status": "ok", "service": "star-witness-api"] }
 
