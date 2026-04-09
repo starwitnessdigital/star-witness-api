@@ -13,17 +13,19 @@ RUN swift package resolve
 COPY Sources ./Sources
 COPY Tests  ./Tests
 
-# Build in release mode
-RUN swift build -c release --static-swift-stdlib
+# Build in release mode (no --static-swift-stdlib; runtime stage provides the Swift libs)
+RUN swift build -c release
 
 # ─────────────────────────────────────────────────────────────────
 # Stage 2: Run
 # ─────────────────────────────────────────────────────────────────
-FROM ubuntu:22.04
+# swift:6.0-jammy-slim contains the Swift runtime libraries but not the compiler,
+# so the binary runs without needing --static-swift-stdlib.
+FROM swift:6.0-jammy-slim
 
 WORKDIR /app
 
-# Runtime dependencies only
+# Runtime dependencies (openssl for NIO/TLS, sqlite3 for Fluent, ca-certs for HTTPS)
 RUN apt-get update && apt-get install -y \
     libssl-dev \
     libsqlite3-dev \
